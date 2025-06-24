@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Config Migration Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Materialize CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/kotlin.min.js"></script>
+  <!-- CodeMirror for JSON input highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+
+  <script defer src="script/config-migration-android.js"></script>
+  <link rel="stylesheet" href="style/config-migration-tool.css" />
+
+  <script>
+    let inputEditor;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Initialize Materialize components
+      M.AutoInit();
+
+      // Initialize CodeMirror for JSON input
+      inputEditor = CodeMirror.fromTextArea(document.getElementById('input'), {
+        mode: { name: "javascript", json: true },
+        theme: "material-darker",
+        lineNumbers: true,
+        lineWrapping: true,
+        indentUnit: 2,
+        smartIndent: true,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        placeholder: "Paste your config.json here...",
+        viewportMargin: Infinity
+      });
+
+      const migrateButton = document.getElementById("migrateButton");
+      migrateButton.onclick = () => {
+        const input = inputEditor.getValue();
+        if (!input.trim()) {
+          M.toast({ html: 'Please enter some configuration to convert', classes: 'orange' });
+          return;
+        }
+
+        try {
+          const kotlin = convertToKotlinConfig(input);
+          const output = document.getElementById("output");
+          const codeElement = output.querySelector('code');
+
+          // Set the code content
+          codeElement.textContent = kotlin;
+
+          // Remove previous highlighting state and apply new highlighting
+          codeElement.removeAttribute('data-highlighted');
+          codeElement.className = 'language-kotlin'; // Reset class in case it was modified
+          hljs.highlightElement(codeElement);
+
+          M.toast({ html: 'Configuration converted successfully!', classes: 'green' });
+        } catch (error) {
+          M.toast({ html: 'Error converting configuration: ' + error.message, classes: 'red' });
+        }
+      }
+
+      // Copy to clipboard functionality
+      const copyButton = document.getElementById("copyButton");
+      copyButton.onclick = () => {
+        const output = document.getElementById("output");
+        const codeElement = output.querySelector('code');
+        const codeText = codeElement ? codeElement.textContent : output.textContent;
+
+        if (!codeText.trim()) {
+          M.toast({ html: 'Nothing to copy', classes: 'orange' });
+          return;
+        }
+
+        navigator.clipboard.writeText(codeText).then(() => {
+          M.toast({ html: 'Copied to clipboard!', classes: 'green' });
+        }).catch(() => {
+          M.toast({ html: 'Failed to copy to clipboard', classes: 'red' });
+        });
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <div class="container main-container">
+    <div class="row">
+      <div class="col s12">
+        <div class="card">
+          <div class="card-content">
+            <div class="card-title center-align">
+              <i class="material-icons feature-icon large teal-text">settings</i>
+              <h4>Config.json to BBConfiguration Converter</h4>
+              <p class="grey-text">Transform your JSON configuration files into Kotlin BBConfiguration format</p>
+            </div>
+
+            <div class="row">
+              <div class="col s12">
+                <div class="section-title">
+                  <i class="material-icons feature-icon">code</i>
+                  Input JSON Configuration
+                </div>
+                <div class="input-field">
+                  <textarea id="input" style="display: none;">
+{
+  "development": {
+    "debugEnable": true
+  },
+  "backbase": {
+    "serverURL": "https://app.dev.sdbxaz.azure.backbaseservices.com",
+    "localModelPath": "$(contextRoot)/model.json",
+    "experience": "",
+    "version": "6.1.5",
+    "identity": {
+      "baseURL": "https://identity.dev.sdbxaz.azure.backbaseservices.com",
+      "realm": "retail",
+      "clientId": "mobile-client",
+      "applicationKey": "retail"
+    }
+  },
+  "security": {
+    "allowedDomains": [
+      "*"
+    ]
+  },
+  "custom": {
+    "default-http-headers": {
+      "X-SDBXAZ-API-KEY": "ADD YOUR API KEY HERE"
+    }
+  },
+  "bankTimeZone": "Europe/Amsterdam"
+}               
+                  </textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="center-align">
+              <button id="migrateButton" class="btn-large waves-effect waves-light teal">
+                <i class="material-icons left">transform</i>
+                Convert to Kotlin
+              </button>
+            </div>
+
+            <div class="output-section" id="outputSection" style="display: none;">
+              <div class="section-title">
+                <i class="material-icons feature-icon">code</i>
+                Generated BBConfiguration
+                <button id="copyButton" class="btn-small waves-effect waves-light blue right">
+                  <i class="material-icons left">content_copy</i>
+                  Copy
+                </button>
+              </div>
+              <pre id="output"><code class="language-kotlin"></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row">
+      <div class="col s12 m4">
+        <div class="card">
+          <div class="card-content center-align">
+            <i class="material-icons large teal-text">speed</i>
+            <h5>Fast Conversion</h5>
+            <p>Instantly convert your JSON configuration files to Kotlin BBConfiguration format</p>
+          </div>
+        </div>
+      </div>
+      <div class="col s12 m4">
+        <div class="card">
+          <div class="card-content center-align">
+            <i class="material-icons large teal-text">code</i>
+            <h5>Clean Output</h5>
+            <p>Generate clean, readable Kotlin code that's ready to use in your Android projects</p>
+          </div>
+        </div>
+      </div>
+      <div class="col s12 m4">
+        <div class="card">
+          <div class="card-content center-align">
+            <i class="material-icons large teal-text">content_copy</i>
+            <h5>Easy Copy</h5>
+            <p>One-click copy to clipboard functionality for seamless workflow integration</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Materialize JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    // Show output section when conversion is done
+    document.addEventListener("DOMContentLoaded", function () {
+      const originalMigrateFunction = document.getElementById("migrateButton").onclick;
+      document.getElementById("migrateButton").onclick = function () {
+        const result = originalMigrateFunction();
+        const outputSection = document.getElementById("outputSection");
+        const output = document.getElementById("output");
+        const codeElement = output.querySelector('code');
+        const hasContent = codeElement ? codeElement.textContent.trim() : output.textContent.trim();
+
+        if (hasContent) {
+          outputSection.style.display = 'block';
+          outputSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        return result;
+      };
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,122 @@
+body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.main-container {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.card-title {
+  font-weight: 300;
+  margin-bottom: 1.5rem;
+}
+
+.input-field textarea {
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+}
+
+.btn {
+  border-radius: 25px;
+  text-transform: none;
+  font-weight: 500;
+  margin: 0.5rem;
+}
+
+.btn-large {
+  padding: 0 2rem;
+}
+
+#output {
+  border-radius: 8px;
+  padding: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#output code {
+  padding: 1rem;
+  border-radius: 8px;
+  display: block;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Override Prism theme to match our design */
+pre[class*="language-"] {
+  margin: 0;
+  border-radius: 8px;
+}
+
+code[class*="language-"] {
+  text-shadow: none;
+}
+
+/* CodeMirror styling to match Material Design */
+.CodeMirror {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  height: 500px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.CodeMirror-focused {
+  border-color: #26a69a;
+  box-shadow: 0 2px 8px rgba(38, 166, 154, 0.2);
+}
+
+.CodeMirror-scroll {
+  border-radius: 8px;
+}
+
+/* Override the material-darker theme colors slightly */
+.cm-s-material-darker.CodeMirror {
+  background-color: #212121;
+  color: #eeffff;
+}
+
+.cm-s-material-darker .CodeMirror-gutters {
+  background-color: #1a1a1a;
+  border-right: 1px solid #333;
+}
+
+.cm-s-material-darker .CodeMirror-linenumber {
+  color: #616161;
+}
+
+.output-section {
+  margin-top: 2rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: #424242;
+}
+
+.feature-icon {
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+.progress-section {
+  margin: 1rem 0;
+} 
