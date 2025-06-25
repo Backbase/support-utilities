@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/kotlin.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/swift.min.js"></script>
   <!-- CodeMirror for JSON input highlighting -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
@@ -20,10 +21,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
 
   <script defer src="script/config-migration-android.js"></script>
+    <script defer src="script/config-migration-ios.js"></script>
   <link rel="stylesheet" href="style/config-migration-tool.css" />
 
   <script>
     let inputEditor;
+    let currentTab = 'kotlin';
 
     document.addEventListener("DOMContentLoaded", function () {
       // Initialize Materialize components
@@ -45,6 +48,28 @@
         viewportMargin: Infinity
       });
 
+      // Tab switching functionality
+      const kotlinTab = document.getElementById("kotlinTab");
+      const swiftTab = document.getElementById("swiftTab");
+      const kotlinOutput = document.getElementById("kotlinOutput");
+      const swiftOutput = document.getElementById("swiftOutput");
+
+      kotlinTab.onclick = () => {
+        currentTab = 'kotlin';
+        kotlinTab.classList.add('active');
+        swiftTab.classList.remove('active');
+        kotlinOutput.style.display = 'block';
+        swiftOutput.style.display = 'none';
+      };
+
+      swiftTab.onclick = () => {
+        currentTab = 'swift';
+        swiftTab.classList.add('active');
+        kotlinTab.classList.remove('active');
+        swiftOutput.style.display = 'block';
+        kotlinOutput.style.display = 'none';
+      };
+
       const migrateButton = document.getElementById("migrateButton");
       migrateButton.onclick = () => {
         const input = inputEditor.getValue();
@@ -55,16 +80,21 @@
 
         try {
           const kotlin = convertToKotlinConfig(input);
-          const output = document.getElementById("output");
-          const codeElement = output.querySelector('code');
+          const swift = convertToSwiftConfig(input);
+          
+          // Update Kotlin output
+          const kotlinCodeElement = kotlinOutput.querySelector('code');
+          kotlinCodeElement.textContent = kotlin;
+          kotlinCodeElement.removeAttribute('data-highlighted');
+          kotlinCodeElement.className = 'language-kotlin';
+          hljs.highlightElement(kotlinCodeElement);
 
-          // Set the code content
-          codeElement.textContent = kotlin;
-
-          // Remove previous highlighting state and apply new highlighting
-          codeElement.removeAttribute('data-highlighted');
-          codeElement.className = 'language-kotlin'; // Reset class in case it was modified
-          hljs.highlightElement(codeElement);
+          // Update Swift output
+          const swiftCodeElement = swiftOutput.querySelector('code');
+          swiftCodeElement.textContent = swift;
+          swiftCodeElement.removeAttribute('data-highlighted');
+          swiftCodeElement.className = 'language-swift';
+          hljs.highlightElement(swiftCodeElement);
 
           M.toast({ html: 'Configuration converted successfully!', classes: 'green' });
         } catch (error) {
@@ -75,9 +105,9 @@
       // Copy to clipboard functionality
       const copyButton = document.getElementById("copyButton");
       copyButton.onclick = () => {
-        const output = document.getElementById("output");
-        const codeElement = output.querySelector('code');
-        const codeText = codeElement ? codeElement.textContent : output.textContent;
+        const activeOutput = currentTab === 'kotlin' ? kotlinOutput : swiftOutput;
+        const codeElement = activeOutput.querySelector('code');
+        const codeText = codeElement ? codeElement.textContent : activeOutput.textContent;
 
         if (!codeText.trim()) {
           M.toast({ html: 'Nothing to copy', classes: 'orange' });
@@ -103,7 +133,7 @@
             <div class="card-title center-align">
               <i class="material-icons feature-icon large teal-text">settings</i>
               <h4>Config.json to BBConfiguration Converter</h4>
-              <p class="grey-text">Transform your JSON configuration files into Kotlin BBConfiguration format</p>
+              <p class="grey-text">Transform your JSON configuration files into Kotlin or Swift BBConfiguration format</p>
             </div>
 
             <div class="row">
@@ -150,7 +180,7 @@
             <div class="center-align">
               <button id="migrateButton" class="btn-large waves-effect waves-light teal">
                 <i class="material-icons left">transform</i>
-                Convert to Kotlin
+                Convert Configuration
               </button>
             </div>
 
@@ -163,7 +193,28 @@
                   Copy
                 </button>
               </div>
-              <pre id="output"><code class="language-kotlin"></code></pre>
+              
+              <!-- Tabs -->
+              <div class="row">
+                <div class="col s12">
+                  <div class="custom-tabs">
+                    <button class="tab-button active" id="kotlinTab">
+                      <i class="material-icons left">android</i>Kotlin
+                    </button>
+                    <button class="tab-button" id="swiftTab">
+                      <i class="material-icons left">phone_iphone</i>Swift
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Content -->
+              <div id="kotlinOutput" class="tab-content">
+                <pre><code class="language-kotlin"></code></pre>
+              </div>
+              <div id="swiftOutput" class="tab-content" style="display: none;">
+                <pre><code class="language-swift"></code></pre>
+              </div>
             </div>
           </div>
         </div>
@@ -177,7 +228,7 @@
           <div class="card-content center-align">
             <i class="material-icons large teal-text">speed</i>
             <h5>Fast Conversion</h5>
-            <p>Instantly convert your JSON configuration files to Kotlin BBConfiguration format</p>
+            <p>Instantly convert your JSON configuration files to Kotlin or Swift BBConfiguration format</p>
           </div>
         </div>
       </div>
@@ -185,8 +236,8 @@
         <div class="card">
           <div class="card-content center-align">
             <i class="material-icons large teal-text">code</i>
-            <h5>Clean Output</h5>
-            <p>Generate clean, readable Kotlin code that's ready to use in your Android projects</p>
+            <h5>Multi-Platform</h5>
+            <p>Generate clean, readable code for both Android (Kotlin) and iOS (Swift) projects</p>
           </div>
         </div>
       </div>
@@ -211,9 +262,9 @@
       document.getElementById("migrateButton").onclick = function () {
         const result = originalMigrateFunction();
         const outputSection = document.getElementById("outputSection");
-        const output = document.getElementById("output");
-        const codeElement = output.querySelector('code');
-        const hasContent = codeElement ? codeElement.textContent.trim() : output.textContent.trim();
+        const kotlinOutput = document.getElementById("kotlinOutput");
+        const kotlinCodeElement = kotlinOutput.querySelector('code');
+        const hasContent = kotlinCodeElement ? kotlinCodeElement.textContent.trim() : false;
 
         if (hasContent) {
           outputSection.style.display = 'block';
