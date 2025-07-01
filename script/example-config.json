@@ -1,0 +1,57 @@
+{
+  "development": {
+      "allowUntrustedCertificates": true,
+      "debugEnable": true
+  },
+  "backbase": {
+      "remoteContextRoot": "http://launchpad.backbase.com:8180",
+      "serverURL": "http://mobile-backend1.backbase.com:8080",
+      "sessionCookieName": "X-Auth-Token",
+      "version": "6.0",
+      "authentication":{
+          "fieldNames": {
+              "username": "j_username",
+              "password": "j_password"
+          }
+      },
+      "oAuth2": {
+          "tokenEndpoint": "http://oauth2-server:8180/apis/token/",
+          "clientId": "client_id"
+      },
+      "identity": {
+          "baseURL": "http://identity-bbiam.backbase.com:8180/",
+          "realm": "backbase",
+          "clientId": "mobile-client",
+          "applicationKey": "app-key"
+      }
+  },
+  "security": {
+      "allowedDomains": [
+          "http://*.backbase.com",
+          "http://*.google.com"
+      ],
+      "blockWebViewRequests": true,
+      "allowedResourceServers": [
+          "http://*.backbase.com",
+          "http://*.google.com"
+      ],
+      "allowedAppSignatures": [
+          "EF:91:5B:E2:5A:17:70:3F:92:5B:62:0D:80:98:49:18:D5:50:AA:C1:66:80:C9:17:62:7B:57:25:14:8E:26:0B"
+      ]
+  },
+  "bankTimeZone": "America/New_York",
+  "appGroupIdentifier": "group.example.identifier",
+  "persistentHeaders": {
+      "exampleHeader": ["example.domain.com", "example.domain.net"],
+      "exampleHeader2": ["example.domain2.com", "example.domain2.net"]
+  },
+  "custom": {
+      "arrayProperty" : ["iamarray", "I am array as well"],
+      "stringProperty": "iamstring",
+      "default-http-headers": {
+          "X-SDBXAZ-API-KEY": "ADD YOUR API KEY HERE"
+      },
+      "numberProperty": 1232,
+      "booleanProperty": true
+  }
+} 

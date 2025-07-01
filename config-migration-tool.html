@@ -48,6 +48,17 @@
         viewportMargin: Infinity
       });
 
+      // Load example configuration
+      fetch('script/example-config.json')
+        .then(response => response.text())
+        .then(jsonText => {
+          inputEditor.setValue(jsonText);
+        })
+        .catch(error => {
+          console.error('Error loading example config:', error);
+          inputEditor.setValue('{\n  "backbase": {\n    "serverURL": "https://your-server-url.com",\n    "version": "6.1.5"\n  }\n}');
+        });
+
       // Tab switching functionality
       const kotlinTab = document.getElementById("kotlinTab");
       const swiftTab = document.getElementById("swiftTab");
@@ -143,36 +154,7 @@
                   Input JSON Configuration
                 </div>
                 <div class="input-field">
-                  <textarea id="input" style="display: none;">
-{
-  "development": {
-    "debugEnable": true
-  },
-  "backbase": {
-    "serverURL": "https://app.dev.sdbxaz.azure.backbaseservices.com",
-    "localModelPath": "$(contextRoot)/model.json",
-    "experience": "",
-    "version": "6.1.5",
-    "identity": {
-      "baseURL": "https://identity.dev.sdbxaz.azure.backbaseservices.com",
-      "realm": "retail",
-      "clientId": "mobile-client",
-      "applicationKey": "retail"
-    }
-  },
-  "security": {
-    "allowedDomains": [
-      "*"
-    ]
-  },
-  "custom": {
-    "default-http-headers": {
-      "X-SDBXAZ-API-KEY": "ADD YOUR API KEY HERE"
-    }
-  },
-  "bankTimeZone": "Europe/Amsterdam"
-}               
-                  </textarea>
+                  <textarea id="input" style="display: none;" placeholder="Loading example configuration..."></textarea>
                 </div>
               </div>
             </div>

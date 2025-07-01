@@ -1,3 +1,11 @@
+function developmentBlock(development) {
+    if (!development || typeof development.debugEnable !== "boolean") return "";
+
+    return `development = DevelopmentConfiguration {
+        debugEnable = ${development.debugEnable}
+    }`;
+}
+
 function identityBlock(identity) {
     if (!identity) return "";
 
@@ -26,6 +34,14 @@ function allowedDomainsBlock(domains) {
     )`;
 }
 
+function allowedResourceServersBlock(domains) {
+    if (!domains || !domains.length) return "";
+    const items = domains.map(d => `"${d}"`).join(",\n        ");
+    return `allowedResourceServers = listOf(
+        ${items}
+    )`;
+}
+
 function allowedAppSignaturesBlock(allowedAppSignatures) {
     if (!allowedAppSignatures || !allowedAppSignatures.length) return "";
     const items = allowedAppSignatures.map(d => `"${d}"`).join(",\n        ");
@@ -41,6 +57,31 @@ function persistentHeadersBlock(headers) {
     ).join(",\n        ");
     return `persistentHeaders = mapOf(
         ${pairs}
+    )`;
+}
+
+function customMapBlock(custom) {
+    if (!custom || Object.keys(custom).length === 0) return "";
+
+    const entries = Object.entries(custom).map(([key, value]) => {
+        if (Array.isArray(value)) {
+            return `"${key}" to listOf(${value.map(v => `"${v}"`).join(", ")})`;
+        } else if (typeof value === "object" && value !== null) {
+            const mapEntries = Object.entries(value).map(
+                ([k, v]) => `"${k}" to ${typeof v === "number" || typeof v === "boolean" ? v : `"${v}"`}`
+            ).join(", ");
+            return `"${key}" to mapOf(${mapEntries})`;
+        } else if (typeof value === "number" || typeof value === "boolean") {
+            return `"${key}" to ${value}`;
+        } else if (typeof value === "string") {
+            return `"${key}" to "${value}"`;
+        } else {
+            return ""; // skip unsupported types
+        }
+    }).filter(Boolean);
+
+    return `custom = mapOf(
+        ${entries.join(",\n        ")}
     )`;
 }
 
@@ -83,6 +124,7 @@ function convertToKotlinConfig(input) {
 
     const mainBlock = `
 BBConfiguration {
+    ${developmentBlock(json.development)}
     ${serverURL ? `serverUrl = "${serverURL}"` : ""}
     ${version ? `version = "${version}"` : ""}
     ${sessionCookieName ? `sessionCookieName = "${sessionCookieName}"` : ""}
@@ -91,12 +133,16 @@ BBConfiguration {
     ${identityBlock(identity)}
     ${oAuth2Block(oAuth2)}
     ${allowedDomainsBlock(json.security?.allowedDomains)}
+    ${allowedResourceServersBlock(json.security?.allowedResourceServers)}
     ${allowedAppSignaturesBlock(json.security?.allowedAppSignatures)}
     ${persistentHeadersBlock(json.persistentHeaders)}
     ${json.bankTimeZone ? `bankTimeZone = "${json.bankTimeZone}"` : ""}
+    ${customMapBlock(json.custom)}
 }`.trim().replace(/^\s*\n/gm, "");
 
-    const customBlock = customPropertiesBlock(json.custom);
+    // const customBlock = customPropertiesBlock(json.custom);
 
-    return [mainBlock, "", customBlock].filter(Boolean).join("\n\n");
+    // return [mainBlock, "", customBlock].filter(Boolean).join("\n\n");
+
+    return [mainBlock].filter(Boolean).join("\n\n");
 }
