@@ -10,81 +10,80 @@ function convertToSwiftConfig(input) {
 
     const escapeString = (str) => str.replace(/"/g, '\\"');
 
-    let swift = `let builder = BBConfigurationBuilder()\n`;
-    swift += `let config = builder\n`;
+    let swift = `let config = BBConfiguration()\n\n`;
 
-    if (backbase.serverURL) {
-        swift += `    .addServerURL("${escapeString(backbase.serverURL)}")\n`;
+    // Create identity configuration if all required fields are present
+    if (identity.baseURL && identity.realm && identity.clientId) {
+        const applicationKeyParam = identity.applicationKey ? `,\n    applicationKey: "${escapeString(identity.applicationKey)}"` : '';
+        swift += `let identityConfig = BBIdentityConfiguration(\n    baseURL: "${escapeString(identity.baseURL)}",\n    realm: "${escapeString(identity.realm)}",\n    clientId: "${escapeString(identity.clientId)}"${applicationKeyParam}\n)\n`;
     }
 
-    if (backbase.version) {
-        swift += `    .addBBVersion("${escapeString(backbase.version)}")\n`;
+    // Create OAuth2 configuration if required fields are present
+    if (oAuth2.tokenEndpoint || oAuth2.clientId) {
+        const tokenEndpointParam = oAuth2.tokenEndpoint ? `\n    tokenEndpoint: "${escapeString(oAuth2.tokenEndpoint)}"` : '';
+        const clientIdParam = oAuth2.clientId ? `\n    clientId: "${escapeString(oAuth2.clientId)}"` : '';
+        const params = [tokenEndpointParam, clientIdParam].filter(p => p).join(',');
+        swift += `let oAuth2Config = BBOAuth2Configuration(${params}\n)\n`;
     }
 
-    if (backbase.sessionCookieName) {
-        swift += `    .addSessionCookieName("${escapeString(backbase.sessionCookieName)}")\n`;
+    // Create backbase configuration
+    const serverURLParam = backbase.serverURL ? `\n    serverURL: "${escapeString(backbase.serverURL)}"` : '';
+    const versionParam = backbase.version ? `\n    version: "${escapeString(backbase.version)}"` : '';
+    const identityParam = (identity.baseURL && identity.realm && identity.clientId) ? `\n    identity: identityConfig` : '';
+    const oAuth2Param = (oAuth2.tokenEndpoint || oAuth2.clientId) ? `\n    oAuth2: oAuth2Config` : '';
+    
+    const backbaseParams = [serverURLParam, versionParam, identityParam, oAuth2Param].filter(p => p).join(',');
+    if (backbaseParams) {
+        swift += `config.backbase = BBBackbaseConfiguration(${backbaseParams}\n)\n`;
     }
 
-    if (identity.baseURL && identity.realm && identity.clientId && identity.applicationKey) {
-        swift += `    .addIdentityConfigurationWithBaseURL(\n`;
-        swift += `        baseUrl = "${escapeString(identity.baseURL)}",\n`;
-        swift += `        realm = "${escapeString(identity.realm)}",\n`;
-        swift += `        clientId = "${escapeString(identity.clientId)}",\n`;
-        swift += `        applicationKey = "${escapeString(identity.applicationKey)}"\n`;
-        swift += `    )\n`;
-    }
-
-    if (oAuth2.tokenEndpoint && oAuth2.clientId) {
-        swift += `    .addOAuth2ConfigurationWithTokenEndpoint(\n`;
-        swift += `        tokenEndpoint = "${escapeString(oAuth2.tokenEndpoint)}",\n`;
-        swift += `        clientId = "${escapeString(oAuth2.clientId)}"\n`;
-        swift += `    )\n`;
-    }
-
+    // Set security configuration if allowed domains are present
     if (Array.isArray(security.allowedDomains) && security.allowedDomains.length > 0) {
         const domains = security.allowedDomains.map(d => `"${escapeString(d)}"`).join(", ");
-        swift += `    .addAllowedDomains([${domains}])\n`;
+        swift += `config.security = BBSecurityConfiguration(\n    allowedDomains: [${domains}]\n)\n`;
     }
 
+    // Set persistent headers if present
     if (Object.keys(headers).length > 0) {
-        swift += `    .addPersistentHeaders([\n`;
+        swift += `config.persistentHeaders = [\n`;
         for (const [key, values] of Object.entries(headers)) {
             const arr = values.map(v => `"${escapeString(v)}"`).join(", ");
-            swift += `        "${escapeString(key)}": [${arr}],\n`;
+            swift += `    "${escapeString(key)}": [${arr}],\n`;
         }
-        swift += `    ])\n`;
+        swift += `]\n`;
     }
 
+    // Set bank timezone if present
     if (configJson.bankTimeZone) {
-        swift += `    .addBankTimeZone("${escapeString(configJson.bankTimeZone)}")\n`;
+        swift += `config.bankTimeZone = "${escapeString(configJson.bankTimeZone)}"\n`;
     }
 
+    // Set app group identifier if present
     if (configJson.appGroupIdentifier) {
-        swift += `    .addAppGroupIdentifier("${escapeString(configJson.appGroupIdentifier)}")\n`;
+        swift += `config.appGroupIdentifier = "${escapeString(configJson.appGroupIdentifier)}"\n`;
     }
 
-    swift += `    .build()\n\n`;
-
-    // Convert custom properties to Swift variables
-    for (const [key, value] of Object.entries(custom)) {
-        let safeKey = key.replace(/-/g, "_");
-
-        if (Array.isArray(value)) {
-            const arr = value.map(v => `"${escapeString(v)}"`).join(", ");
-            swift += `let ${safeKey}: [String] = [${arr}]\n`;
-        } else if (typeof value === "string") {
-            swift += `let ${safeKey}: String = "${escapeString(value)}"\n`;
-        } else if (typeof value === "number") {
-            swift += `let ${safeKey}: Int = ${value}\n`;
-        } else if (typeof value === "boolean") {
-            swift += `let ${safeKey}: Bool = ${value}\n`;
-        } else if (typeof value === "object") {
-            // Assume string-to-string map
-            const entries = Object.entries(value)
-                .map(([k, v]) => `"${escapeString(k)}": "${escapeString(v)}"`)
-                .join(", ");
-            swift += `let ${safeKey}: [String: String] = [${entries}]\n`;
+    // Set custom properties if present
+    if (Object.keys(custom).length > 0) {
+        swift += `config.custom = [\n`;
+        for (const [key, value] of Object.entries(custom)) {
+            if (typeof value === "string") {
+                swift += `    "${escapeString(key)}": "${escapeString(value)}",\n`;
+            } else if (typeof value === "number") {
+                swift += `    "${escapeString(key)}": ${value},\n`;
+            } else if (typeof value === "boolean") {
+                swift += `    "${escapeString(key)}": ${value},\n`;
+            } else if (Array.isArray(value)) {
+                const arr = value.map(v => `"${escapeString(v)}"`).join(", ");
+                swift += `    "${escapeString(key)}": [${arr}],\n`;
+            } else if (typeof value === "object") {
+                const entries = Object.entries(value)
+                    .map(([k, v]) => `"${escapeString(k)}": "${escapeString(v)}"`)
+                    .join(", ");
+                swift += `    "${escapeString(key)}": [${entries}],\n`;
+            }
         }
+        swift += `]\n`;
     }
 
     return swift;
