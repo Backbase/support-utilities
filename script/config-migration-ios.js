@@ -10,7 +10,7 @@ function convertToSwiftConfig(input) {
 
     const escapeString = (str) => str.replace(/"/g, '\\"');
 
-    let swift = `let config = BBConfiguration()\n\n`;
+    let swift = `let configuration = BBConfiguration()\n\n`;
 
     // Create identity configuration if all required fields are present
     if (identity.baseURL && identity.realm && identity.clientId) {
@@ -34,18 +34,18 @@ function convertToSwiftConfig(input) {
     
     const backbaseParams = [serverURLParam, versionParam, identityParam, oAuth2Param].filter(p => p).join(',');
     if (backbaseParams) {
-        swift += `config.backbase = BBBackbaseConfiguration(${backbaseParams}\n)\n`;
+        swift += `configuration.backbase = BBBackbaseConfiguration(${backbaseParams}\n)\n`;
     }
 
     // Set security configuration if allowed domains are present
     if (Array.isArray(security.allowedDomains) && security.allowedDomains.length > 0) {
         const domains = security.allowedDomains.map(d => `"${escapeString(d)}"`).join(", ");
-        swift += `config.security = BBSecurityConfiguration(\n    allowedDomains: [${domains}]\n)\n`;
+        swift += `configuration.security = BBSecurityConfiguration(\n    allowedDomains: [${domains}]\n)\n`;
     }
 
     // Set persistent headers if present
     if (Object.keys(headers).length > 0) {
-        swift += `config.persistentHeaders = [\n`;
+        swift += `configuration.persistentHeaders = [\n`;
         for (const [key, values] of Object.entries(headers)) {
             const arr = values.map(v => `"${escapeString(v)}"`).join(", ");
             swift += `    "${escapeString(key)}": [${arr}],\n`;
@@ -55,17 +55,17 @@ function convertToSwiftConfig(input) {
 
     // Set bank timezone if present
     if (configJson.bankTimeZone) {
-        swift += `config.bankTimeZone = "${escapeString(configJson.bankTimeZone)}"\n`;
+        swift += `configuration.bankTimeZone = "${escapeString(configJson.bankTimeZone)}"\n`;
     }
 
     // Set app group identifier if present
     if (configJson.appGroupIdentifier) {
-        swift += `config.appGroupIdentifier = "${escapeString(configJson.appGroupIdentifier)}"\n`;
+        swift += `configuration.appGroupIdentifier = "${escapeString(configJson.appGroupIdentifier)}"\n`;
     }
 
     // Set custom properties if present
     if (Object.keys(custom).length > 0) {
-        swift += `config.custom = [\n`;
+        swift += `configuration.custom = [\n`;
         for (const [key, value] of Object.entries(custom)) {
             if (typeof value === "string") {
                 swift += `    "${escapeString(key)}": "${escapeString(value)}",\n`;
