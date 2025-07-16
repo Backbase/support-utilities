@@ -86,5 +86,7 @@ function convertToSwiftConfig(input) {
         swift += `]\n`;
     }
 
+    swift += `\n\nBackbase.initialize(fromConfig: configuration)`
+    
     return swift;
 }

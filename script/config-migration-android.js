@@ -144,5 +144,5 @@ BBConfiguration {
 
     // return [mainBlock, "", customBlock].filter(Boolean).join("\n\n");
 
-    return [mainBlock].filter(Boolean).join("\n\n");
+    return `val bbConfiguration = ${mainBlock}\n\nBackbase.initialize(applicationContext, bbConfiguration)`;
 }
