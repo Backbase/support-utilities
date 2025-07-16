@@ -9,21 +9,44 @@ function developmentBlock(development) {
 function identityBlock(identity) {
     if (!identity) return "";
 
-    return `identityConfiguration = IdentityConfiguration {
-        ${identity.baseURL ? `baseUrl = "${identity.baseURL}"` : ""}
-        ${identity.realm ? `realm = "${identity.realm}"` : ""}
-        ${identity.clientId ? `clientId = "${identity.clientId}"` : ""}
-        ${identity.applicationKey ? `applicationKey = "${identity.applicationKey}"` : ""}
+    // Required constructor parameters
+    const constructorParams = [];
+    if (identity.baseURL) constructorParams.push(`baseUrl = "${identity.baseURL}"`);
+    if (identity.realm) constructorParams.push(`realm = "${identity.realm}"`);
+    if (identity.clientId) constructorParams.push(`clientId = "${identity.clientId}"`);
+
+    if (constructorParams.length === 0) return "";
+
+    // Optional DSL parameters
+    const dslParams = [];
+    if (identity.applicationKey) dslParams.push(`applicationKey = "${identity.applicationKey}"`);
+
+    if (dslParams.length > 0) {
+        return `identityConfiguration = IdentityConfiguration(
+        ${constructorParams.join(",\n        ")}
+    ) {
+        ${dslParams.join("\n        ")}
     }`;
+    } else {
+        return `identityConfiguration = IdentityConfiguration(
+        ${constructorParams.join(",\n        ")}
+    )`;
+    }
 }
 
 function oAuth2Block(oauth) {
     if (!oauth) return "";
 
-    return `oAuth2Configuration = OAuth2Configuration {
-        ${oauth.tokenEndpoint ? `tokenEndpoint = "${oauth.tokenEndpoint}"` : ""}
-        ${oauth.clientId ? `clientId = "${oauth.clientId}"` : ""}
-    }`;
+    // Required constructor parameters
+    const constructorParams = [];
+    if (oauth.tokenEndpoint) constructorParams.push(`tokenEndpoint = "${oauth.tokenEndpoint}"`);
+    if (oauth.clientId) constructorParams.push(`clientId = "${oauth.clientId}"`);
+
+    if (constructorParams.length === 0) return "";
+
+    return `oAuth2Configuration = OAuth2Configuration(
+        ${constructorParams.join(",\n        ")}
+    )`;
 }
 
 function allowedDomainsBlock(domains) {
@@ -80,6 +103,8 @@ function customMapBlock(custom) {
         }
     }).filter(Boolean);
 
+    if (entries.length === 0) return "";
+
     return `custom = mapOf(
         ${entries.join(",\n        ")}
     )`;
@@ -122,27 +147,35 @@ function convertToKotlinConfig(input) {
         oAuth2
     } = json.backbase || {};
 
-    const mainBlock = `
-BBConfiguration {
-    ${developmentBlock(json.development)}
-    ${serverURL ? `serverUrl = "${serverURL}"` : ""}
-    ${version ? `version = "${version}"` : ""}
-    ${sessionCookieName ? `sessionCookieName = "${sessionCookieName}"` : ""}
-    ${csrfCookieName ? `csrfCookieName = "${csrfCookieName}"` : ""}
-    ${csrfHeaderName ? `csrfHeaderName = "${csrfHeaderName}"` : ""}
-    ${identityBlock(identity)}
-    ${oAuth2Block(oAuth2)}
-    ${allowedDomainsBlock(json.security?.allowedDomains)}
-    ${allowedResourceServersBlock(json.security?.allowedResourceServers)}
-    ${allowedAppSignaturesBlock(json.security?.allowedAppSignatures)}
-    ${persistentHeadersBlock(json.persistentHeaders)}
-    ${json.bankTimeZone ? `bankTimeZone = "${json.bankTimeZone}"` : ""}
-    ${customMapBlock(json.custom)}
-}`.trim().replace(/^\s*\n/gm, "");
+    // Required constructor parameter for BBConfiguration
+    const bbConstructorParam = serverURL ? `serverUrl = "${serverURL}"` : "";
+    
+    // Build DSL block content
+    const dslLines = [
+        developmentBlock(json.development),
+        version ? `version = "${version}"` : "",
+        sessionCookieName ? `sessionCookieName = "${sessionCookieName}"` : "",
+        csrfCookieName ? `csrfCookieName = "${csrfCookieName}"` : "",
+        csrfHeaderName ? `csrfHeaderName = "${csrfHeaderName}"` : "",
+        identityBlock(identity),
+        oAuth2Block(oAuth2),
+        allowedDomainsBlock(json.security?.allowedDomains),
+        allowedResourceServersBlock(json.security?.allowedResourceServers),
+        allowedAppSignaturesBlock(json.security?.allowedAppSignatures),
+        persistentHeadersBlock(json.persistentHeaders),
+        json.bankTimeZone ? `bankTimeZone = "${json.bankTimeZone}"` : "",
+        customMapBlock(json.custom)
+    ].filter(Boolean);
 
-    // const customBlock = customPropertiesBlock(json.custom);
-
-    // return [mainBlock, "", customBlock].filter(Boolean).join("\n\n");
-
-    return `val bbConfiguration = ${mainBlock}\n\nBackbase.initialize(applicationContext, bbConfiguration)`;
+    if (bbConstructorParam) {
+        const mainBlock = `BBConfiguration(${bbConstructorParam}) {
+    ${dslLines.join("\n    ")}
+}`;
+        return `val bbConfiguration = ${mainBlock}\n\nBackbase.initialize(applicationContext, bbConfiguration)`;
+    } else {
+        const mainBlock = `BBConfiguration {
+    ${dslLines.join("\n    ")}
+}`;
+        return `val bbConfiguration = ${mainBlock}\n\nBackbase.initialize(applicationContext, bbConfiguration)`;
+    }
 }
