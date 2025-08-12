@@ -1,8 +1,20 @@
 function developmentBlock(development) {
-    if (!development || typeof development.debugEnable !== "boolean") return "";
+    if (!development) return "";
 
+    const lines = [];
+    
+    if (typeof development.debugEnable === "boolean") {
+        lines.push(`debugEnable = ${development.debugEnable}`);
+    }
+    
+    if (typeof development.allowUntrustedCertificates === "boolean") {
+        lines.push(`allowUntrustedCertificates = ${development.allowUntrustedCertificates}`);
+    }
+    
+    if (lines.length === 0) return "";
+    
     return `development = DevelopmentConfiguration {
-        debugEnable = ${development.debugEnable}
+        ${lines.join(",\n        ")}
     }`;
 }
 
